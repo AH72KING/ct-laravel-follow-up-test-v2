@@ -129,12 +129,15 @@
                     //console.log(data);
                     if(data.id) {
                         //location.reload();
+                        let formattedDate = data.created_at.replace('T', ' ').split('.')[0]; // Converts '2025-02-10T08:16:55.000000Z' → '2025-02-10 08:16:55'
                         if (editingProductId) {
                             // Update existing row dynamically
                             let row = $('#productTable').find(`tr[data-id="${editingProductId}"]`);
                             row.find('td:eq(0)').text(data.name);
                             row.find('td:eq(1)').text(data.quantity);
                             row.find('td:eq(2)').text(data.price);
+                            row.find('td:eq(3)').text(formattedDate);
+                            row.find('td:eq(4)').text(data.total_value);
                         } else {
                             // Append new row dynamically
                             let newRow = `
@@ -142,13 +145,15 @@
                                 <td>${data.name}</td>
                                 <td>${data.quantity}</td>
                                 <td>${data.price}</td>
+                                <td>${formattedDate}</td>
+                                <td>${data.total_value}</td>
                                 <td>
                                     <button class="edit-btn btn btn-primary">Edit</button>
                                     <button class="delete-btn btn btn-danger">Delete</button>
                                 </td>
                             </tr>`;
                             console.log('newRow',newRow);
-                            $('#productTable tbody').append(newRow);
+                            $('#productTable tbody').prepend(newRow);
                         }
                     }
                     // Reset form
