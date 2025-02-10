@@ -80,10 +80,10 @@
                         <tfoot>
                         <tr>
                             <th>Totals</th>
-                            <th>{!! $total_qty ?? '' !!}</th>
+                            <th id="totalQuantity">{!! $total_qty ?? '' !!}</th>
                             <th>-</th>
                             <th>-</th>
-                            <th>{!! $total_val ?? '' !!}</th>
+                            <th id="totalValue">{!! $total_val ?? '' !!}</th>
                             <th>-</th>
                         </tr>
                         </tfoot>
@@ -103,100 +103,142 @@
     </div>
 </div>
 <script>
-    let editingProductId = null; // Store product ID for editing
+    $(document).ready(function(){
+        let editingProductId = null; // Store product ID for editing
 
-    // Set up AJAX headers to include CSRF token
-    $.ajaxSetup({
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        // Set up AJAX headers to include CSRF token
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
+
+        // Handle form submission
+        $('#productForm').on('submit', function(e) {
+            e.preventDefault();
+            $(".errorMessages").html('').hide();
+            let formData = $(this).serialize();
+            let url = editingProductId ? `/update/${editingProductId}` : '/store';
+
+            $.ajax({
+                url: url,
+                type: "POST",
+                data: formData,
+                dataType: "json",
+                success: function (data) {
+                    //console.log(data);
+                    if(data.id) {
+                        //location.reload();
+                        if (editingProductId) {
+                            // Update existing row dynamically
+                            let row = $('#productTable').find(`tr[data-id="${editingProductId}"]`);
+                            row.find('td:eq(0)').text(data.name);
+                            row.find('td:eq(1)').text(data.quantity);
+                            row.find('td:eq(2)').text(data.price);
+                        } else {
+                            // Append new row dynamically
+                            let newRow = `
+                            <tr data-id="${data.id}">
+                                <td>${data.name}</td>
+                                <td>${data.quantity}</td>
+                                <td>${data.price}</td>
+                                <td>
+                                    <button class="edit-btn btn btn-primary">Edit</button>
+                                    <button class="delete-btn btn btn-danger">Delete</button>
+                                </td>
+                            </tr>`;
+                            $('#productTable tbody').append(newRow);
+                        }
+                    }
+                    // Reset form
+                    editingProductId = null;
+                    $('#productForm')[0].reset();
+                    recalculateTotals();
+                },
+                error: function (xhr) {
+                    if (xhr.status === 422) { // Laravel validation error status
+                        let errors = xhr.responseJSON.errors;
+                        let errorMessages = "";
+
+                        $.each(errors, function (key, messages) {
+                            errorMessages += messages.join("<br>") + "<br>";
+                        });
+
+                        // Display error messages in an alert or in a div
+                        $("#errorMessages").html(errorMessages).show();
+                    } else {
+                        alert("An error occurred. Please try again.");
+                    }
+                }
+            });
+        });
+
+        // Handle Edit Button Click
+        $('.edit-btn').on('click', function() {
+            $(".errorMessages").html('').hide();
+            let row = $(this).closest('tr');
+            editingProductId = row.data('id');
+
+            // Populate form fields
+            $('input[name="name"]').val(row.find('td:eq(0)').text());
+            $('input[name="quantity"]').val(row.find('td:eq(1)').text());
+            $('input[name="price"]').val(row.find('td:eq(2)').text());
+        });
+
+        //extra to delete
+        $('.delete-btn').on('click', function() {
+            $(".errorMessages").html('').hide();
+            let row = $(this).closest('tr');
+            let productId = row.data('id');
+            let url = productId ? `/delete/${productId}` : '/404';
+            $.ajax({
+                url: url,
+                type: "DELETE",
+                data: {product_id:productId},
+                dataType: "json",
+                success: function (data) {
+                    //console.log(data);
+                    if(data.success) {
+                        //location.reload();
+                        row.fadeOut(300, function () {
+                            $(this).remove();
+                            recalculateTotals();
+                        });
+                    }
+                },
+                error: function (xhr) {
+                    if (xhr.status === 422) { // Laravel validation error status
+                        let errors = xhr.responseJSON.errors;
+                        let errorMessages = "";
+
+                        $.each(errors, function (key, messages) {
+                            errorMessages += messages.join("<br>") + "<br>";
+                        });
+
+                        // Display error messages in an alert or in a div
+                        $("#errorMessagesDelete").html(errorMessages).show();
+                    } else {
+                        alert("An error occurred. Please try again.");
+                    }
+                }
+            });
+        });
+        function recalculateTotals() {
+            let totalQuantity = 0;
+            let totalValue = 0;
+
+            $('#productTable tbody tr').each(function () {
+                let quantity = parseFloat($(this).find('td:eq(1)').text()) || 0;
+                let price = parseFloat($(this).find('td:eq(2)').text()) || 0;
+
+                totalQuantity += quantity;
+                totalValue += (price * quantity);
+            });
+
+            // Update the totals in the UI
+            $('#totalQuantity').text(totalQuantity);
+            $('#totalValue').text(totalValue.toFixed(2)); // 2 decimal places
         }
-    });
-
-    // Handle form submission
-    $('#productForm').on('submit', function(e) {
-        e.preventDefault();
-        $(".errorMessages").html('').hide();
-        let formData = $(this).serialize();
-        let url = editingProductId ? `/update/${editingProductId}` : '/store';
-
-        $.ajax({
-            url: url,
-            type: "POST",
-            data: formData,
-            dataType: "json",
-            success: function (data) {
-                //console.log(data);
-                if(data.id) {
-                    location.reload();
-                }
-            },
-            error: function (xhr) {
-                if (xhr.status === 422) { // Laravel validation error status
-                    let errors = xhr.responseJSON.errors;
-                    let errorMessages = "";
-
-                    $.each(errors, function (key, messages) {
-                        errorMessages += messages.join("<br>") + "<br>";
-                    });
-
-                    // Display error messages in an alert or in a div
-                    $("#errorMessages").html(errorMessages).show();
-                } else {
-                    alert("An error occurred. Please try again.");
-                }
-            }
-        });
-
-        // Reset form
-        editingProductId = null;
-        $('#productForm')[0].reset();
-    });
-
-    // Handle Edit Button Click
-    $('.edit-btn').on('click', function() {
-        $(".errorMessages").html('').hide();
-        let row = $(this).closest('tr');
-        editingProductId = row.data('id');
-
-        // Populate form fields
-        $('input[name="name"]').val(row.find('td:eq(0)').text());
-        $('input[name="quantity"]').val(row.find('td:eq(1)').text());
-        $('input[name="price"]').val(row.find('td:eq(2)').text());
-    });
-
-    //extra to delete
-    $('.delete-btn').on('click', function() {
-        $(".errorMessages").html('').hide();
-        let row = $(this).closest('tr');
-        let productId = row.data('id');
-        let url = productId ? `/delete/${productId}` : '/404';
-        $.ajax({
-            url: url,
-            type: "DELETE",
-            data: {product_id:productId},
-            dataType: "json",
-            success: function (data) {
-                //console.log(data);
-                if(data.success) {
-                    location.reload();
-                }
-            },
-            error: function (xhr) {
-                if (xhr.status === 422) { // Laravel validation error status
-                    let errors = xhr.responseJSON.errors;
-                    let errorMessages = "";
-
-                    $.each(errors, function (key, messages) {
-                        errorMessages += messages.join("<br>") + "<br>";
-                    });
-
-                    // Display error messages in an alert or in a div
-                    $("#errorMessagesDelete").html(errorMessages).show();
-                } else {
-                    alert("An error occurred. Please try again.");
-                }
-            }
-        });
     });
 </script>
 </body>
