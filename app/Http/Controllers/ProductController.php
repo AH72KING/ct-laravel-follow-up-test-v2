@@ -68,4 +68,25 @@ class ProductController extends Controller
 
         Storage::disk('public')->put('products.json', $jsonData);
     }
+
+    public function destroy($id)
+    {
+        try {
+            $product = Product::findOrFail($id);
+            $product->delete();
+
+            $this->saveToJson();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product not found or deletion failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

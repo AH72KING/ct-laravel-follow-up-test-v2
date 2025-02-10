@@ -45,7 +45,7 @@
                             <input type="number" step="0.01" class="form-control" name="price" required>
                         </div>
                         <button type="submit" class="btn btn-primary">Submit</button>
-                        <div id="errorMessages" class="alert alert-danger mt-3" style="display: none;"></div>
+                        <div id="errorMessages" class="alert alert-danger mt-3 errorMessages" style="display: none;"></div>
                     </form>
                 </div>
                 <div class="space-y-2 m-4"></div>
@@ -70,7 +70,10 @@
                                 <td>{{ $product->price }}</td>
                                 <td>{{ $product->created_at }}</td>
                                 <td>{{ $product->total_value }}</td>
-                                <td><button class="btn btn-sm btn-warning edit-btn">Edit</button></td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning edit-btn">Edit</button>
+                                    <button class="btn btn-sm btn-danger delete-btn">Delete</button>
+                                </td>
                             </tr>
                         @endforeach
                         </tbody>
@@ -85,6 +88,7 @@
                         </tr>
                         </tfoot>
                     </table>
+                    <div id="errorMessagesDelete" class="alert alert-danger mt-3 errorMessages" style="display: none;"></div>
                 </div>
                 <div class="mt-3">
                     <h2>Download Json file by clicking link below:</h2>
@@ -111,6 +115,7 @@
     // Handle form submission
     $('#productForm').on('submit', function(e) {
         e.preventDefault();
+        $(".errorMessages").html('').hide();
         let formData = $(this).serialize();
         let url = editingProductId ? `/update/${editingProductId}` : '/store';
 
@@ -149,6 +154,7 @@
 
     // Handle Edit Button Click
     $('.edit-btn').on('click', function() {
+        $(".errorMessages").html('').hide();
         let row = $(this).closest('tr');
         editingProductId = row.data('id');
 
@@ -156,6 +162,41 @@
         $('input[name="name"]').val(row.find('td:eq(0)').text());
         $('input[name="quantity"]').val(row.find('td:eq(1)').text());
         $('input[name="price"]').val(row.find('td:eq(2)').text());
+    });
+
+    //extra to delete
+    $('.delete-btn').on('click', function() {
+        $(".errorMessages").html('').hide();
+        let row = $(this).closest('tr');
+        let productId = row.data('id');
+        let url = productId ? `/delete/${productId}` : '/404';
+        $.ajax({
+            url: url,
+            type: "DELETE",
+            data: {product_id:productId},
+            dataType: "json",
+            success: function (data) {
+                //console.log(data);
+                if(data.success) {
+                    location.reload();
+                }
+            },
+            error: function (xhr) {
+                if (xhr.status === 422) { // Laravel validation error status
+                    let errors = xhr.responseJSON.errors;
+                    let errorMessages = "";
+
+                    $.each(errors, function (key, messages) {
+                        errorMessages += messages.join("<br>") + "<br>";
+                    });
+
+                    // Display error messages in an alert or in a div
+                    $("#errorMessagesDelete").html(errorMessages).show();
+                } else {
+                    alert("An error occurred. Please try again.");
+                }
+            }
+        });
     });
 </script>
 </body>
