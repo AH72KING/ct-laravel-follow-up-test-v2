@@ -148,8 +148,8 @@
                                 <td>${formattedDate}</td>
                                 <td>${data.total_value}</td>
                                 <td>
-                                    <button class="edit-btn btn btn-primary">Edit</button>
-                                    <button class="delete-btn btn btn-danger">Delete</button>
+                                    <button class="btn btn-sm btn-warning edit-btn">Edit</button>
+                                    <button class="btn btn-sm btn-danger delete-btn">Delete</button>
                                 </td>
                             </tr>`;
                             console.log('newRow',newRow);
@@ -180,7 +180,7 @@
         });
 
         // Handle Edit Button Click
-        $('.edit-btn').on('click', function() {
+        $('body').on('click','.edit-btn',function() {
             $(".errorMessages").html('').hide();
             let row = $(this).closest('tr');
             editingProductId = row.data('id');
@@ -192,7 +192,7 @@
         });
 
         //extra to delete
-        $('.delete-btn').on('click', function() {
+        $('body').on('click','.delete-btn', function() {
             $(".errorMessages").html('').hide();
             let row = $(this).closest('tr');
             let productId = row.data('id');
