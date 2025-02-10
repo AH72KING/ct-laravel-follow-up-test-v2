@@ -51,7 +51,7 @@
                 <div class="space-y-2 m-4"></div>
                 <div class="grid m-2">
                     <h2>Products List</h2>
-                    <table class="table table-bordered mt-3">
+                    <table id="productTable" class="table table-bordered mt-3">
                         <thead>
                         <tr>
                             <th>Product name</th>
@@ -62,7 +62,7 @@
                             <th>Actions</th>
                         </tr>
                         </thead>
-                        <tbody id="productTable">
+                        <tbody>
                         @foreach($products as $product)
                             <tr data-id="{{ $product->id }}">
                                 <td>{{ $product->name }}</td>
@@ -147,6 +147,7 @@
                                     <button class="delete-btn btn btn-danger">Delete</button>
                                 </td>
                             </tr>`;
+                            console.log('newRow',newRow);
                             $('#productTable tbody').append(newRow);
                         }
                     }
